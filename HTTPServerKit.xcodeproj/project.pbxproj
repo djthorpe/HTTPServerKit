@@ -6,10 +6,33 @@
 	objectVersion = 46;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		140F11E518A18BEA008E1E4F /* sthttpd */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 140F11E618A18BEA008E1E4F /* Build configuration list for PBXAggregateTarget "sthttpd" */;
+			buildPhases = (
+				140F11EB18A18C0C008E1E4F /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = sthttpd;
+			productName = sthttpd;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		140F11AE18A18679008E1E4F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 140F11AD18A18679008E1E4F /* Cocoa.framework */; };
-		140F11E418A18828008E1E4F /* PGHTTPServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 140F11DC18A186B1008E1E4F /* PGHTTPServer.m */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		140F11E918A18BF9008E1E4F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 140F119F18A1863F008E1E4F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 140F11E518A18BEA008E1E4F;
+			remoteInfo = sthttpd;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		140F11AA18A18679008E1E4F /* HTTPServerKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = HTTPServerKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -147,10 +170,12 @@
 				140F11A618A18679008E1E4F /* Frameworks */,
 				140F11A718A18679008E1E4F /* Headers */,
 				140F11A818A18679008E1E4F /* Resources */,
+				140F11ED18A18C9C008E1E4F /* ShellScript */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				140F11EA18A18BF9008E1E4F /* PBXTargetDependency */,
 			);
 			name = HTTPServerKit;
 			productName = HTTPServerKit;
@@ -177,6 +202,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				140F11E518A18BEA008E1E4F /* sthttpd */,
 				140F11A918A18679008E1E4F /* HTTPServerKit */,
 			);
 		};
@@ -192,16 +218,54 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		140F11EB18A18C0C008E1E4F /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/third_party/sthttpd-2.26.4.tar.gz",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\nif [ \"${SCRIPT_INPUT_FILE_COUNT}\" != \"1\" ] ; then\n  echo \"Invalid number of input files\"\n  exit 1\nfi\n\nif [ ! -f ${SCRIPT_INPUT_FILE_0} ] ; then\n  echo \"Missing input file\"\n  exit 1\nfi\n\necho \"Making ${SCRIPT_INPUT_FILE_0}\"\necho \"Output to ${BUILT_PRODUCTS_DIR}\"\n\nif [ ! -d \"${BUILT_PRODUCTS_DIR}\" ]\nthen\n  mkdir -pv \"${BUILT_PRODUCTS_DIR}\"\nfi\n\n/bin/bash ${SRCROOT}/etc/build-sthttpd.sh ${SCRIPT_INPUT_FILE_0} ${BUILT_PRODUCTS_DIR}\n";
+		};
+		140F11ED18A18C9C008E1E4F /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\nVERSION=sthttpd-current-mac_x86_64\nBUILD=${BUILT_PRODUCTS_DIR}\nPREFIX=${BUILD}/${VERSION}\nDESTINATION=${BUILD}/${CONTENTS_FOLDER_PATH}/Resources\n\necho Installing from ${PREFIX} to ${DESTINATION}/${VERSION}\n\n# copy sbin directory\necho cp -r ${PREFIX}/bin ${DESTINATION}/${VERSION}\ninstall -d ${DESTINATION}/${VERSION}/sbin\ncp -r ${PREFIX}/sbin ${DESTINATION}/${VERSION}\n\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		140F11A518A18679008E1E4F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				140F11E418A18828008E1E4F /* PGHTTPServer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		140F11EA18A18BF9008E1E4F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 140F11E518A18BEA008E1E4F /* sthttpd */;
+			targetProxy = 140F11E918A18BF9008E1E4F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		140F11A318A1863F008E1E4F /* Debug */ = {
@@ -306,6 +370,20 @@
 			};
 			name = Release;
 		};
+		140F11E718A18BEA008E1E4F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		140F11E818A18BEA008E1E4F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -323,6 +401,14 @@
 			buildConfigurations = (
 				140F11D018A18679008E1E4F /* Debug */,
 				140F11D118A18679008E1E4F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		140F11E618A18BEA008E1E4F /* Build configuration list for PBXAggregateTarget "sthttpd" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				140F11E718A18BEA008E1E4F /* Debug */,
+				140F11E818A18BEA008E1E4F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 		};
