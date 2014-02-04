@@ -18,7 +18,7 @@ Credits:
 
   2. The fork is by Anthony G. Basile <blueness@gentoo.org> http://opensource.dyc.edu/sthttpd Send all blame to him.  Feel free to open a bug regarding sthttpd at http://opensource.dyc.edu/bugzilla3/
 
-  3. thttpd is released under a BSD license.  Any extended code added by sthttpd is also released under the same license.  Here's a copy of it from the src/thttpd.c file:
+  3. thttpd is released under a BSD license.  Any extended code added by sthttpd is also released under the same license.  Here's a copy of it from the `src/thttpd.c` file:
 
 ```
 ** Copyright 1995,1998,1999,2000,2001 by Jef Poskanzer <jef@mail.acme.com>.
