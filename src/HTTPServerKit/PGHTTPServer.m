@@ -8,22 +8,8 @@
 
 // constants
 NSString* const PGHTTPServerErrorDomain = @"PGHTTPServerErrorDomain";
-NSString* const PGHTTPServerExecutable = @"/usr/sbin/httpd";
+NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttpd";
 NSString* const PGHTTPFilePID = @"httpd.pid";
-NSString* const PGHTTPFileConf = @"httpd.conf";
-NSString* const PGHTTPFileLog = @"httpd.log";
-NSString* const PGHTTPFileLock = @"httpd.lock";
-
-enum {
-	PGHTTPServerErrorUnknown = 100,
-	PGHTTPServerErrorNetwork = 101,
-	PGHTTPServerErrorTemplate = 102
-};
-
-@interface PGHTTPServer (Private)
--(NSUInteger)_pidFromPath:(NSString* )thePath;
--(void)_setPid:(NSUInteger)pid;
-@end
 
 @implementation PGHTTPServer
 
@@ -59,29 +45,68 @@ enum {
 		return nil;
 	}
 	PGHTTPServer* server = [[PGHTTPServer alloc] initWithDataPath:thePath];
+	/*
 	NSUInteger pid = [server _pidFromPath:thePath];
 	if(pid > 0) {
 		[server _setPid:pid];
-	}
+	}*/
 	return server;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark PROPERTIES
 
-@synthesize state = _state;
 @synthesize port = _port;
-@synthesize processID = _pid;
+@synthesize pid = _pid;
 @synthesize bonjourName, bonjourType;
-@dynamic URL;
+
+////////////////////////////////////////////////////////////////////////////////
+#pragma mark PRIVATE METHODS
+
+-(NSBundle* )_bundle {
+	return [NSBundle bundleForClass:[self class]];
+}
+
+-(NSURL* )_URLForResource:(NSString* )resource {
+	NSString* resourceName = [resource stringByDeletingPathExtension];
+	NSString* resourceType = [resource pathExtension];
+	return [[self _bundle] URLForResource:resourceName withExtension:resourceType];
+}
+
+////////////////////////////////////////////////////////////////////////////////
+#pragma mark PUBLIC METHODS
+
+-(BOOL)startWithDocumentRoot:(NSString* )documentRoot {
+	return NO;
+}
+
+-(BOOL)stop {
+	return NO;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+#pragma mark NSNetServiceDelegate
+
+-(void)netService:(NSNetService* )service didNotPublish:(NSDictionary* )dict {
+#ifdef DEBUG
+    NSLog(@"NSNetServiceDelegate: Failed to publish: %@",dict);
+#endif
+}
+
+
+/*
+
+
+@interface PGHTTPServer (Private)
+-(NSUInteger)_pidFromPath:(NSString* )thePath;
+-(void)_setPid:(NSUInteger)pid;
+@end
 
 -(NSURL* )URL {
 	NSString* url = [NSString stringWithFormat:@"http://%@:%d/",[[NSProcessInfo processInfo] hostName],[self  port]];
 	return [NSURL URLWithString:url];
 }
 
-////////////////////////////////////////////////////////////////////////////////
-#pragma mark PRIVATE METHODS
 
 -(int)_portFromPid:(NSUInteger)pid {
 	NSString* portDirective = @"Listen ";
@@ -116,16 +141,6 @@ enum {
 		[_bonjour setDelegate:self];
 		[_bonjour publish];
 	}
-}
-
--(NSBundle* )_bundle {
-	return [NSBundle bundleForClass:[self class]];
-}
-
--(NSURL* )URLForResource:(NSString* )resource {
-	NSString* resourceName = [resource stringByDeletingPathExtension];
-	NSString* resourceType = [resource pathExtension];
-	return [[self _bundle] URLForResource:resourceName withExtension:resourceType];
 }
 
 -(NSUInteger)_pidFromPath:(NSString* )thePath {
@@ -322,9 +337,6 @@ enum {
 	} while([self _doesProcessExist:thePid]);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-#pragma mark PUBLIC METHODS
-
 -(BOOL)startWithDocumentRoot:(NSString* )documentRoot {
 	NSError* error = nil;
 	
@@ -419,14 +431,7 @@ enum {
 	return returnValue;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-#pragma mark NSNetServiceDelegate
-
--(void)netService:(NSNetService* )service didNotPublish:(NSDictionary* )dict {
-#ifdef DEBUG
-    NSLog(@"NSNetServiceDelegate: Failed to publish: %@",dict);
-#endif
-}
+*/
 
 
 

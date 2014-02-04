@@ -1,11 +1,21 @@
 
 #import <Foundation/Foundation.h>
 
+////////////////////////////////////////////////////////////////////////////////
+
 typedef enum {
 	PGHTTPServerStateUnknown,
 	PGHTTPServerStateStarted,
 	PGHTTPServerStateStopped,
 } PGHTTPServerStateType;
+
+typedef enum {
+	PGHTTPServerErrorUnknown = 100,
+	PGHTTPServerErrorNetwork = 101,
+	PGHTTPServerErrorTemplate = 102
+} PGHTTPServerErrorType;
+
+////////////////////////////////////////////////////////////////////////////////
 
 @class PGHTTPServer;
 
@@ -19,7 +29,7 @@ typedef enum {
 	@private
 		PGHTTPServerStateType _state;
 		NSString* _path;
-		NSUInteger _pid;
+		int _pid;
 		int _port;
 		NSNetService* _bonjour;
 }
@@ -32,9 +42,7 @@ typedef enum {
 @property (retain) NSString* bonjourName;
 @property (retain) NSString* bonjourType;
 @property (assign) int port;
-@property (readonly) PGHTTPServerStateType state;
 @property (readonly) int pid;
-@property (readonly) NSURL* URL;
 
 // methods
 -(BOOL)startWithDocumentRoot:(NSString* )documentRoot;

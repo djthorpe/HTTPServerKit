@@ -22,6 +22,9 @@
 
 /* Begin PBXBuildFile section */
 		140F11AE18A18679008E1E4F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 140F11AD18A18679008E1E4F /* Cocoa.framework */; };
+		149E5EF618A1957C001F6A54 /* PGHTTPServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 140F11DC18A186B1008E1E4F /* PGHTTPServer.m */; };
+		149E5EF718A19733001F6A54 /* PGHTTPServer.h in Headers */ = {isa = PBXBuildFile; fileRef = 140F11DB18A186B1008E1E4F /* PGHTTPServer.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		149E5EF818A19738001F6A54 /* HTTPServerKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 140F11DA18A186B1008E1E4F /* HTTPServerKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -156,6 +159,8 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				149E5EF818A19738001F6A54 /* HTTPServerKit.h in Headers */,
+				149E5EF718A19733001F6A54 /* PGHTTPServer.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -254,6 +259,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				149E5EF618A1957C001F6A54 /* PGHTTPServer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -403,6 +409,7 @@
 				140F11D118A18679008E1E4F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		140F11E618A18BEA008E1E4F /* Build configuration list for PBXAggregateTarget "sthttpd" */ = {
 			isa = XCConfigurationList;
@@ -411,6 +418,7 @@
 				140F11E818A18BEA008E1E4F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
