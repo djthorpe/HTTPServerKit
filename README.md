@@ -14,25 +14,14 @@ sthttpd
 
 Credits:
 
-1. The original codebase is by
+  1. The original codebase is by Jef Poskanzer <jef@mail.acme.com>  http://www.acme.com/jef/ Please send all kudos to him.
 
-        Jef Poskanzer <jef@mail.acme.com>  http://www.acme.com/jef/
+  2. The fork is by Anthony G. Basile <blueness@gentoo.org> http://opensource.dyc.edu/sthttpd Send all blame to him.  Feel free to open a bug regarding sthttpd at http://opensource.dyc.edu/bugzilla3/
 
-Please send all kudos to him.
+  3. thttpd is released under a BSD license.  Any extended code added by sthttpd is also released under the same license.  Here's a copy of it from the src/thttpd.c file:
 
-2. The fork is by
-
-        Anthony G. Basile <blueness@gentoo.org> http://opensource.dyc.edu/sthttpd
-
-Send all blame to him.  Feel free to open a bug regarding sthttpd at
-
-        http://opensource.dyc.edu/bugzilla3/
-
-3. thttpd is released under a BSD license.  Any extended code added by sthttpd is
-also released under the same license.  Here's a copy of it from the src/thttpd.c
-file:
-
-** Copyright � 1995,1998,1999,2000,2001 by Jef Poskanzer <jef@mail.acme.com>.
+```
+** Copyright 1995,1998,1999,2000,2001 by Jef Poskanzer <jef@mail.acme.com>.
 ** All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
@@ -55,4 +44,5 @@ file:
 ** LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
 ** OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 ** SUCH DAMAGE.
+```
 
