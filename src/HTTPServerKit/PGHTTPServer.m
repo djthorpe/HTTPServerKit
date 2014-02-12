@@ -9,7 +9,7 @@
 // constants
 NSString* const PGHTTPServerErrorDomain = @"PGHTTPServerErrorDomain";
 NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttpd";
-NSString* const PGHTTPFilePID = @"httpd.pid";
+NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 
 @implementation PGHTTPServer
 
@@ -26,7 +26,6 @@ NSString* const PGHTTPFilePID = @"httpd.pid";
 		_state = PGHTTPServerStateUnknown;
 		_path = path;
 		_bonjour = nil;
-		_pid = 0;
 		_port = 0;
 		[self setBonjourName:[[NSProcessInfo processInfo] hostName]];
 		[self setBonjourType:@"_http._tcp."];
@@ -34,22 +33,26 @@ NSString* const PGHTTPFilePID = @"httpd.pid";
 	return self;
 }
 
-+(PGHTTPServer* )serverWithDataPath:(NSString* )thePath {
-	NSParameterAssert(thePath);
++(PGHTTPServer* )serverWithDataPath:(NSURL* )url {
+	NSParameterAssert(url);
 	// check for directory and writable
+	if([url isFileURL]==NO) {
+		return nil;
+	}
+	NSString* path = [url path];
 	BOOL isDir = NO;
-	if([[NSFileManager defaultManager] fileExistsAtPath:thePath isDirectory:&isDir]==NO || isDir==NO) {
+	if([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir]==NO || isDir==NO) {
 		return nil;
 	}
-	if([[NSFileManager defaultManager] isWritableFileAtPath:thePath]==NO) {
+	if([[NSFileManager defaultManager] isWritableFileAtPath:path]==NO) {
 		return nil;
 	}
-	PGHTTPServer* server = [[PGHTTPServer alloc] initWithDataPath:thePath];
-	/*
-	NSUInteger pid = [server _pidFromPath:thePath];
-	if(pid > 0) {
-		[server _setPid:pid];
-	}*/
+	PGHTTPServer* server = [[PGHTTPServer alloc] initWithDataPath:path];
+	NSInteger pid = [server pid];
+	if(pid) {
+		// can't create the server object, since there is already a running
+		// instance
+	}
 	return server;
 }
 
@@ -57,8 +60,31 @@ NSString* const PGHTTPFilePID = @"httpd.pid";
 #pragma mark PROPERTIES
 
 @synthesize port = _port;
-@synthesize pid = _pid;
 @synthesize bonjourName, bonjourType;
+@dynamic pid;
+
+-(NSInteger)pid {
+	NSString* thePidPath = [_path stringByAppendingPathComponent:kPGHTTPServerFilePID];
+	if([[NSFileManager defaultManager] fileExistsAtPath:thePidPath]==NO || [[NSFileManager defaultManager] isReadableFileAtPath:thePidPath]==NO) {
+		return 0;
+	}
+	NSDictionary* theAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:thePidPath error:nil];
+	if(theAttributes==nil || [theAttributes fileSize] > 1024) {
+		return 0;
+	}
+	NSString* thePidString = [NSString stringWithContentsOfFile:thePidPath encoding:NSUTF8StringEncoding error:nil];
+	if(thePidString==nil) {
+		return 0;
+	}
+	// return the PID as a decimal number
+	NSDecimalNumber* thePid = [NSDecimalNumber decimalNumberWithString:thePidString];
+	if(thePid==nil) {
+		return 0;
+	}
+	// success - return decimal number
+	return [thePid integerValue];
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark PRIVATE METHODS
@@ -77,8 +103,89 @@ NSString* const PGHTTPFilePID = @"httpd.pid";
 #pragma mark PUBLIC METHODS
 
 -(BOOL)startWithDocumentRoot:(NSString* )documentRoot {
-	return NO;
+	NSError* error = nil;
+	
+	// determine port to be used
+	NSUInteger unusedPort = [self port];
+	if(unusedPort == 0) {
+		unusedPort = [self getUnusedPortWithError:&error];
+		if(unusedPort==0) {
+#ifdef DEBUG
+			NSLog(@"Error1: %@",error);
+#endif
+			// couldn't find a standard port
+			return NO;
+		}
+	}
+	
+	// remove existing log and configuration files
+	NSString* logPath = [_path stringByAppendingPathComponent:PGHTTPFileLog];
+	NSString* confPath = [_path stringByAppendingPathComponent:PGHTTPFileConf];
+	if([self _removeFileIfExists:logPath error:&error]==NO) {
+#ifdef DEBUG
+		NSLog(@"Error2: %@",error);
+#endif
+		return NO;
+	}
+	if([self _removeFileIfExists:confPath error:&error]==NO) {
+#ifdef DEBUG
+		NSLog(@"Error3: %@",error);
+#endif
+		return NO;
+	}
+	
+	// create configuration file
+	NSDictionary* dictionary = @{
+								 @"PORT": [NSString stringWithFormat:@"%ld",unusedPort],
+								 @"DOCROOT": documentRoot,
+								 @"APPROOT": _path,
+								 @"PIDFILE": PGHTTPFilePID,
+								 @"LOGFILE": PGHTTPFileLog,
+								 @"LOCKFILE": PGHTTPFileLock
+								 };
+	NSURL* templateURL = [self URLForResource:PGHTTPFileConf];
+	if(templateURL==nil || [[NSFileManager defaultManager] fileExistsAtPath:[templateURL path]]==NO) {
+#ifdef DEBUG
+		NSLog(@"Error: Missing resource: %@",PGHTTPFileConf);
+#endif
+		return NO;
+	}
+	
+	NSString* template = [NSString stringWithContentsOfURL:templateURL encoding:NSUTF8StringEncoding error:&error];
+	if(template==nil) {
+#ifdef DEBUG
+		NSLog(@"Error4: %@",error);
+#endif
+		return NO;
+	}
+	
+	NSString* output = [self _replaceInTemplate:template dictionary:dictionary error:&error];
+	if(output==nil) {
+#ifdef DEBUG
+		NSLog(@"Error5: %@",error);
+#endif
+		return NO;
+	}
+	
+	if([output writeToFile:confPath atomically:YES encoding:NSUTF8StringEncoding error:&error]==NO) {
+#ifdef DEBUG
+		NSLog(@"Error6: %@",error);
+#endif
+		return NO;
+	}
+	
+	// start the server
+	if([self _startTaskServerWithConfiguration:confPath]==NO) {
+#ifdef DEBUG
+		NSLog(@"Error7: Unable to start the server");
+#endif
+		return NO;
+	}
+	
+	return YES;
 }
+
+
 
 -(BOOL)stop {
 	return NO;
@@ -95,12 +202,6 @@ NSString* const PGHTTPFilePID = @"httpd.pid";
 
 
 /*
-
-
-@interface PGHTTPServer (Private)
--(NSUInteger)_pidFromPath:(NSString* )thePath;
--(void)_setPid:(NSUInteger)pid;
-@end
 
 -(NSURL* )URL {
 	NSString* url = [NSString stringWithFormat:@"http://%@:%d/",[[NSProcessInfo processInfo] hostName],[self  port]];
@@ -141,28 +242,6 @@ NSString* const PGHTTPFilePID = @"httpd.pid";
 		[_bonjour setDelegate:self];
 		[_bonjour publish];
 	}
-}
-
--(NSUInteger)_pidFromPath:(NSString* )thePath {
-	NSString* thePidPath = [thePath stringByAppendingPathComponent:PGHTTPFilePID];
-	if([[NSFileManager defaultManager] fileExistsAtPath:thePidPath]==NO || [[NSFileManager defaultManager] isReadableFileAtPath:thePidPath]==NO) {
-		return 0;
-	}
-	NSDictionary* theAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:thePidPath error:nil];
-	if(theAttributes==nil || [theAttributes fileSize] > 1024) {
-		return 0;
-	}
-	NSString* thePidString = [NSString stringWithContentsOfFile:thePidPath encoding:NSUTF8StringEncoding error:nil];
-	if(thePidString==nil) {
-		return 0;
-	}
-	// return the PID as a decimal number
-	NSDecimalNumber* thePid = [NSDecimalNumber decimalNumberWithString:thePidString];
-	if(thePid==nil) {
-		return 0;
-	}
-	// success - return decimal number
-	return [thePid unsignedIntegerValue];
 }
 
 -(int)_startTask:(NSString* )theBinary arguments:(NSArray* )theArguments {

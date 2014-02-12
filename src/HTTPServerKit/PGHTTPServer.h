@@ -29,20 +29,20 @@ typedef enum {
 	@private
 		PGHTTPServerStateType _state;
 		NSString* _path;
-		int _pid;
-		int _port;
+		NSUInteger _port;
 		NSNetService* _bonjour;
+		NSError* _error;
 }
 
 // constructor
-+(PGHTTPServer* )serverWithDataPath:(NSString* )thePath;
++(PGHTTPServer* )serverWithDataPath:(NSURL* )url;
 
 // properties
 @property (assign) id<PGHTTPServerDelegate> delegate;
 @property (retain) NSString* bonjourName;
 @property (retain) NSString* bonjourType;
-@property (assign) int port;
-@property (readonly) int pid;
+@property (assign) NSUInteger port;
+@property (readonly) NSInteger pid;
 
 // methods
 -(BOOL)startWithDocumentRoot:(NSString* )documentRoot;
