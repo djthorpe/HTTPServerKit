@@ -37,6 +37,27 @@ NSString* const PGHTTPPasswdExecutable = @"sthttpd-current-mac_x86_64/sbin/th_ht
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+#pragma mark PROPERTIES
+
+@dynamic users;
+
+-(NSArray* )users {
+	NSString* contents = [NSString stringWithContentsOfFile:_file encoding:NSUTF8StringEncoding error:nil];
+	if(contents==nil) {
+		return nil;
+	}
+	NSArray* lines = [contents componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+	NSMutableArray* array = [NSMutableArray arrayWithCapacity:[lines count]];
+	for(NSString* line in lines) {
+		NSArray* username = [line componentsSeparatedByString:@":"];
+		if([username count]) {
+			[array addObject:[username objectAtIndex:0]];
+		}
+	}
+	return array;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 #pragma mark PRIVATE METHODS
 
 +(NSBundle* )_bundle {
@@ -98,7 +119,6 @@ NSString* const PGHTTPPasswdExecutable = @"sthttpd-current-mac_x86_64/sbin/th_ht
 //	[task setStandardError:outPipe];
 	[task launch];
 	
-	[[inPipe fileHandleForWriting] writeData:inData];
 	[[inPipe fileHandleForWriting] writeData:inData];
 	[[inPipe fileHandleForWriting] closeFile];
 	
