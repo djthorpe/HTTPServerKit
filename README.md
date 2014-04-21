@@ -121,6 +121,12 @@ property. A user can be added or the password changed using the method
 whenever a change is made.
 
 
+Foundation Example
+------------------
+
+There is an example Foundation (Command Line) target called HTTPServer, which
+demonstrates how to use the embedded server on the command line.
+
 
 sthttpd License
 ===============
