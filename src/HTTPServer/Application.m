@@ -116,9 +116,11 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 	}
 	// create server
 	NSParameterAssert(_server==nil);
-	_server = [PGHTTPServer serverWithDataPath:dataPath];
+	_server = [PGHTTPServer server];
 	NSParameterAssert(_server);
 	NSLog(@"Run %@",_server);
+	
+	[_server startWithDocumentRoot:NSHomeDirectory()];
 }
 
 -(void)stop:(id)sender {

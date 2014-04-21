@@ -4,15 +4,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef enum {
-	PGHTTPServerStateUnknown,
-	PGHTTPServerStateStarted,
-	PGHTTPServerStateStopped,
-} PGHTTPServerStateType;
-
-typedef enum {
 	PGHTTPServerErrorUnknown = 100,
-	PGHTTPServerErrorNetwork = 101,
-	PGHTTPServerErrorTemplate = 102
+	PGHTTPServerErrorNetwork = 101
 } PGHTTPServerErrorType;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -27,25 +20,24 @@ typedef enum {
 
 @interface PGHTTPServer : NSObject <NSNetServiceDelegate> {
 	@private
-		PGHTTPServerStateType _state;
-		NSString* _path;
 		NSUInteger _port;
+		NSTask* _task;
 		NSNetService* _bonjour;
-		NSError* _error;
 }
 
 // constructor
-+(PGHTTPServer* )serverWithDataPath:(NSURL* )url;
++(PGHTTPServer* )server;
 
 // properties
 @property (assign) id<PGHTTPServerDelegate> delegate;
 @property (retain) NSString* bonjourName;
 @property (retain) NSString* bonjourType;
-@property (assign) NSUInteger port;
-@property (readonly) NSInteger pid;
+@property (readonly) NSUInteger port;
+@property (readonly) int pid;
 
 // methods
 -(BOOL)startWithDocumentRoot:(NSString* )documentRoot;
+-(BOOL)startWithDocumentRoot:(NSString* )documentRoot port:(NSUInteger)port;
 -(BOOL)stop;
 
 @end

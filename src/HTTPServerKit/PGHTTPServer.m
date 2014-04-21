@@ -17,99 +17,117 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 #pragma mark CONSTRUCTOR
 
 -(id)init {
-	return nil;
-}
-
--(id)initWithDataPath:(NSString* )path {
 	self = [super init];
 	if(self) {
-		_state = PGHTTPServerStateUnknown;
-		_path = path;
 		_bonjour = nil;
 		_port = 0;
+		_task = nil;
 		[self setBonjourName:[[NSProcessInfo processInfo] hostName]];
 		[self setBonjourType:@"_http._tcp."];
 	}
 	return self;
 }
 
-+(PGHTTPServer* )serverWithDataPath:(NSURL* )url {
-	NSParameterAssert(url);
-	// check for directory and writable
-	if([url isFileURL]==NO) {
-		return nil;
-	}
-	NSString* path = [url path];
-	BOOL isDir = NO;
-	if([[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir]==NO || isDir==NO) {
-		return nil;
-	}
-	if([[NSFileManager defaultManager] isWritableFileAtPath:path]==NO) {
-		return nil;
-	}
-	PGHTTPServer* server = [[PGHTTPServer alloc] initWithDataPath:path];
-	NSInteger pid = [server pid];
-	if(pid) {
-		// can't create the server object, since there is already a running
-		// instance
-	}
-	return server;
++(PGHTTPServer* )server {
+	return [[PGHTTPServer alloc] init];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark PROPERTIES
 
-@synthesize port = _port;
 @synthesize bonjourName, bonjourType;
-@dynamic pid;
+@dynamic pid,port;
 
--(NSInteger)pid {
-	NSString* thePidPath = [_path stringByAppendingPathComponent:kPGHTTPServerFilePID];
-	if([[NSFileManager defaultManager] fileExistsAtPath:thePidPath]==NO || [[NSFileManager defaultManager] isReadableFileAtPath:thePidPath]==NO) {
-		return 0;
-	}
-	NSDictionary* theAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:thePidPath error:nil];
-	if(theAttributes==nil || [theAttributes fileSize] > 1024) {
-		return 0;
-	}
-	NSString* thePidString = [NSString stringWithContentsOfFile:thePidPath encoding:NSUTF8StringEncoding error:nil];
-	if(thePidString==nil) {
-		return 0;
-	}
-	// return the PID as a decimal number
-	NSDecimalNumber* thePid = [NSDecimalNumber decimalNumberWithString:thePidString];
-	if(thePid==nil) {
-		return 0;
-	}
-	// success - return decimal number
-	return [thePid integerValue];
+-(NSUInteger)port {
+	return _port;
 }
 
+-(int)pid {
+	return [_task processIdentifier];
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark PRIVATE METHODS
 
--(NSBundle* )_bundle {
++(NSBundle* )_bundle {
 	return [NSBundle bundleForClass:[self class]];
 }
 
--(NSURL* )_URLForResource:(NSString* )resource {
++(NSURL* )_URLForResource:(NSString* )resource {
 	NSString* resourceName = [resource stringByDeletingPathExtension];
 	NSString* resourceType = [resource pathExtension];
 	return [[self _bundle] URLForResource:resourceName withExtension:resourceType];
 }
 
++(NSURL* )serverExecutable {
+	return [self _URLForResource:PGHTTPServerExecutable];
+}
+
++(NSUInteger)_getUnusedPortWithError_impl:(NSError** )error {
+	int sfd = socket(AF_INET,SOCK_STREAM,0);
+	if(sfd < 0) {
+		(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorNetwork userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)] }];
+		return 0;
+	}
+	struct sockaddr_in addr;
+	bzero(&addr,sizeof(struct sockaddr_in));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	if(bind(sfd,(const struct sockaddr* )&addr,sizeof(struct sockaddr_in)) < 0) {
+		(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorNetwork userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)] }];
+		close(sfd);
+		return 0;
+	}
+	socklen_t length;
+	if(getsockname(sfd,(struct sockaddr* )&addr,&length) < 0) {
+		(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorNetwork userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)] }];
+		close(sfd);
+		return 0;
+	}
+	close(sfd);
+	return addr.sin_port;
+}
+
++(NSUInteger)_getUnusedPortWithError:(NSError** )error {
+	NSUInteger unusedPort = 0;
+	NSUInteger attempts = 0;
+	NSUInteger portMin = 1025;
+	do {
+		unusedPort = [self _getUnusedPortWithError_impl:error];
+	} while(unusedPort < portMin && (attempts++) < 10); // skip root-only ports
+	if(unusedPort < portMin) {
+		(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorUnknown userInfo:nil];
+		return 0;
+	}
+	return unusedPort;
+}
+
++(int)_startTask:(NSString* )theBinary arguments:(NSArray* )theArguments {
+	NSParameterAssert(theBinary && [theBinary isKindOfClass:[NSString class]]);
+	NSParameterAssert(theArguments && [theArguments isKindOfClass:[NSArray class]]);
+	NSTask* theTask = [[NSTask alloc] init];
+	[theTask setLaunchPath:theBinary];
+	[theTask setArguments:theArguments];
+	[theTask launch];
+	[theTask waitUntilExit];
+	return [theTask terminationStatus];
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark PUBLIC METHODS
 
--(BOOL)startWithDocumentRoot:(NSString* )documentRoot {
-	NSError* error = nil;
-	
+-(BOOL)startWithDocumentRoot:(NSString* )documentRoot port:(NSUInteger)port {
+	NSParameterAssert(documentRoot);
+	// check document root is readable
+	BOOL isPath;
+	if([[NSFileManager defaultManager] fileExistsAtPath:documentRoot isDirectory:&isPath]==NO || isPath==NO) {
+		return NO;
+	}
 	// determine port to be used
-	NSUInteger unusedPort = [self port];
-	if(unusedPort == 0) {
-		unusedPort = [self getUnusedPortWithError:&error];
-		if(unusedPort==0) {
+	NSError* error = nil;
+	if(port == 0) {
+		port = [[self class] _getUnusedPortWithError:&error];
+		if(port==0) {
 #ifdef DEBUG
 			NSLog(@"Error1: %@",error);
 #endif
@@ -117,75 +135,27 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 			return NO;
 		}
 	}
+
+	NSURL* serverExecutable = [[self class] serverExecutable];
+	NSArray* arguments = @[
+		@"-p",[NSString stringWithFormat:@"%lu",port],
+		@"-d",documentRoot,
+		@"-l",@"/dev/null",
+		@"-D"
+	];
+
+	int returnCode = [[self class] _startTask:[serverExecutable path] arguments:arguments];
 	
-	// remove existing log and configuration files
-	NSString* logPath = [_path stringByAppendingPathComponent:PGHTTPFileLog];
-	NSString* confPath = [_path stringByAppendingPathComponent:PGHTTPFileConf];
-	if([self _removeFileIfExists:logPath error:&error]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error2: %@",error);
-#endif
-		return NO;
-	}
-	if([self _removeFileIfExists:confPath error:&error]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error3: %@",error);
-#endif
-		return NO;
-	}
+	// flags
+	// -p <port> -d <docroot> -nos (no symlinks) -l /dev/null -D
 	
-	// create configuration file
-	NSDictionary* dictionary = @{
-								 @"PORT": [NSString stringWithFormat:@"%ld",unusedPort],
-								 @"DOCROOT": documentRoot,
-								 @"APPROOT": _path,
-								 @"PIDFILE": PGHTTPFilePID,
-								 @"LOGFILE": PGHTTPFileLog,
-								 @"LOCKFILE": PGHTTPFileLock
-								 };
-	NSURL* templateURL = [self URLForResource:PGHTTPFileConf];
-	if(templateURL==nil || [[NSFileManager defaultManager] fileExistsAtPath:[templateURL path]]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error: Missing resource: %@",PGHTTPFileConf);
-#endif
-		return NO;
-	}
-	
-	NSString* template = [NSString stringWithContentsOfURL:templateURL encoding:NSUTF8StringEncoding error:&error];
-	if(template==nil) {
-#ifdef DEBUG
-		NSLog(@"Error4: %@",error);
-#endif
-		return NO;
-	}
-	
-	NSString* output = [self _replaceInTemplate:template dictionary:dictionary error:&error];
-	if(output==nil) {
-#ifdef DEBUG
-		NSLog(@"Error5: %@",error);
-#endif
-		return NO;
-	}
-	
-	if([output writeToFile:confPath atomically:YES encoding:NSUTF8StringEncoding error:&error]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error6: %@",error);
-#endif
-		return NO;
-	}
-	
-	// start the server
-	if([self _startTaskServerWithConfiguration:confPath]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error7: Unable to start the server");
-#endif
-		return NO;
-	}
 	
 	return YES;
 }
 
-
+-(BOOL)startWithDocumentRoot:(NSString* )documentRoot {
+	return [self startWithDocumentRoot:documentRoot port:0];
+}
 
 -(BOOL)stop {
 	return NO;
@@ -242,76 +212,6 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 		[_bonjour setDelegate:self];
 		[_bonjour publish];
 	}
-}
-
--(int)_startTask:(NSString* )theBinary arguments:(NSArray* )theArguments {
-	NSParameterAssert(theBinary && [theBinary isKindOfClass:[NSString class]]);
-	NSParameterAssert(theArguments && [theArguments isKindOfClass:[NSArray class]]);
-	NSTask* theTask = [[NSTask alloc] init];
-	[theTask setLaunchPath:theBinary];
-	[theTask setArguments:theArguments];
-	[theTask launch];
-	[theTask waitUntilExit];
-	return [theTask terminationStatus];
-}
-
--(BOOL)_startTaskServerWithConfiguration:(NSString* )confFilePath {
-	// set arguments
-	NSArray* arguments = @[ @"-f",confFilePath ];
-#ifdef DEBUG
-	NSLog(@"Starting server with args: %@",[arguments componentsJoinedByString:@" "]);
-#endif
-	int returnCode = [self _startTask:PGHTTPServerExecutable arguments:arguments];
-	if(returnCode != 0) {
-		return NO;
-	}
-	NSUInteger pid = [self _pidFromPath:_path];
-	if(pid==0) {
-		return NO;
-	}
-	// set the PID and server state
-	[self _setPid:pid];
-	// return success
-	return YES;
-}
-
--(NSUInteger)_getUnusedPortWithError:(NSError** )error {
-	int sfd = socket(AF_INET,SOCK_STREAM,0);
-	if(sfd < 0) {
-		(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorNetwork userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)] }];
-		return 0;
-	}
-	struct sockaddr_in addr;
-	bzero(&addr,sizeof(struct sockaddr_in));
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	if(bind(sfd,(const struct sockaddr* )&addr,sizeof(struct sockaddr_in)) < 0) {
-		(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorNetwork userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)] }];
-		close(sfd);
-		return 0;
-	}
-	socklen_t length;
-	if(getsockname(sfd,(struct sockaddr* )&addr,&length) < 0) {
-		(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorNetwork userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)] }];
-		close(sfd);
-		return 0;
-	}
-	close(sfd);
-	return addr.sin_port;
-}
-
--(NSUInteger)getUnusedPortWithError:(NSError** )error {
-	NSUInteger unusedPort = 0;
-	NSUInteger attempts = 0;
-	NSUInteger portMin = 1025;
-	do {
-		unusedPort = [self _getUnusedPortWithError:error];
-	} while(unusedPort < portMin && (attempts++) < 10); // skip root-only ports
-	if(unusedPort < portMin) {
-		(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorUnknown userInfo:nil];
-		return 0;
-	}
-	return unusedPort;
 }
 
 -(NSString* )_replaceInTemplate:(NSString* )template dictionary:(NSDictionary* )values error:(NSError** )error {
