@@ -17,15 +17,12 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 #pragma mark PRIVATE METHODS
 
 -(BOOL)_parseAppendArgument:(NSString* )argument {
-
 	return YES;
 }
 
 -(BOOL)_parseOptionPort:(NSString* )argument {
-
 	return YES;
 }
-
 
 -(NSURL* )_applicationSupportURLWithSubpath:(NSString* )subpath error:(NSError** )error {
 	NSURL* applicationSupportURL = [[[NSFileManager defaultManager] URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:NO error:error] URLByResolvingSymlinksInPath];
@@ -106,20 +103,12 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 }
 
 -(void)run:(id)sender {
-	// retrieve data path
-	NSError* error = nil;
-	NSURL* dataPath = [self _applicationSupportURLWithError:&error];
-	if(dataPath==nil) {
-		[self setError:error];
-		[self stop:sender];
-		return;
-	}
 	// create server
 	NSParameterAssert(_server==nil);
 	_server = [PGHTTPServer server];
 	NSParameterAssert(_server);
+	[_server setDelegate:self];
 	NSLog(@"Run %@",_server);
-	
 	[_server startWithDocumentRoot:NSHomeDirectory()];
 }
 
@@ -128,5 +117,10 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 	[_server stop];
 	CFRunLoopStop([[NSRunLoop currentRunLoop] getCFRunLoop]);
 }
+
+-(void)server:(PGHTTPServer *)server log:(PGHTTPServerLog *)log {
+	NSLog(@"%@ => %ld",[log request],[log httpcode]);
+}
+
 
 @end

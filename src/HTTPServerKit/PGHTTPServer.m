@@ -125,11 +125,9 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 	NSString* theLine = nil;
 	while(theLine = [theEnumerator nextObject]) {
 		theLine = [theLine stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-		if([theLine length]) {
+		if([theLine length] && [[self delegate] respondsToSelector:@selector(server:log:)]) {
 			PGHTTPServerLog* log = [[PGHTTPServerLog alloc] initWithLine:theLine];
-			if(log && [[self delegate] respondsToSelector:@selector(server:log:)]) {
-				[[self delegate] server:self log:log];
-			}
+			[[self delegate] server:self log:log];
 		}
 	}
 }
@@ -177,7 +175,8 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 
 	// delegate
 	if([[self delegate] respondsToSelector:@selector(server:startedWithURL:)]) {
-		
+		NSURL* url = nil;
+		[[self delegate] server:self startedWithURL:url];
 	}
 
 #ifdef DEBUG
@@ -198,8 +197,6 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 	[arguments addObjectsFromArray:@[ @"-d",documentRoot]];
 	[arguments addObjectsFromArray:@[ @"-l",@"/dev/stdout"]];
 	[arguments addObjectsFromArray:@[ @"-D"]];
-	// flags
-	// -p <port> -d <docroot> -nos (no symlinks) -l /dev/null -D
 	if(isCheckSymlinks==NO) {
 		[arguments addObjectsFromArray:@[ @"-nos"]];
 	}
@@ -207,15 +204,13 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 	if(_task != nil) {
 		return NO;
 	}
+	_port = port;
 	_task = [self _startTask:binary arguments:arguments];
 	NSParameterAssert(_task);
-
-	// register bonjour
-	NSParameterAssert(_bonjour==nil);
 	_bonjour = [[NSNetService alloc] initWithDomain:@"local." type:[self bonjourType] name:[self bonjourName] port:port];
+	NSParameterAssert(_bonjour);
 	[_bonjour setDelegate:self];
 	[_bonjour publish];
-	
 	return YES;
 }
 
@@ -264,7 +259,7 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark NSNetServiceDelegate
 
--(void)netServiceDidPublish:(NSNetService *)sender {
+-(void)netServiceDidPublish:(NSNetService* )sender {
 #ifdef DEBUG
     NSLog(@"NSNetServiceDelegate: netServiceDidPublish: %@",sender);
 #endif
@@ -273,6 +268,12 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 -(void)netService:(NSNetService* )service didNotPublish:(NSDictionary* )dict {
 #ifdef DEBUG
     NSLog(@"NSNetServiceDelegate: Failed to publish: %@",dict);
+#endif
+}
+
+-(void)netServiceDidStop:(NSNetService* )sender {
+#ifdef DEBUG
+    NSLog(@"NSNetServiceDelegate: Stopped: %@",sender);
 #endif
 }
 
@@ -382,100 +383,6 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 		[NSThread sleepForTimeInterval:0.1];
 		count++;
 	} while([self _doesProcessExist:thePid]);
-}
-
--(BOOL)startWithDocumentRoot:(NSString* )documentRoot {
-	NSError* error = nil;
-	
-	NSUInteger unusedPort = [self port];
-	if(unusedPort == 0) {
-		unusedPort = [self getUnusedPortWithError:&error];
-		if(unusedPort==0) {
-#ifdef DEBUG
-			NSLog(@"Error1: %@",error);
-#endif
-			// couldn't find a standard port
-			return NO;
-		}
-	}
-	
-	// remove existing log and configuration files
-	NSString* logPath = [_path stringByAppendingPathComponent:PGHTTPFileLog];
-	NSString* confPath = [_path stringByAppendingPathComponent:PGHTTPFileConf];
-	if([self _removeFileIfExists:logPath error:&error]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error2: %@",error);
-#endif
-		return NO;
-	}
-	if([self _removeFileIfExists:confPath error:&error]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error3: %@",error);
-#endif
-		return NO;
-	}
-	
-	// create configuration file
-	NSDictionary* dictionary = @{
-		@"PORT": [NSString stringWithFormat:@"%ld",unusedPort],
-		@"DOCROOT": documentRoot,
-		@"APPROOT": _path,
-		@"PIDFILE": PGHTTPFilePID,
-		@"LOGFILE": PGHTTPFileLog,
-		@"LOCKFILE": PGHTTPFileLock
-	};
-	NSURL* templateURL = [self URLForResource:PGHTTPFileConf];
-	if(templateURL==nil || [[NSFileManager defaultManager] fileExistsAtPath:[templateURL path]]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error: Missing resource: %@",PGHTTPFileConf);
-#endif
-		return NO;
-	}
-	
-	NSString* template = [NSString stringWithContentsOfURL:templateURL encoding:NSUTF8StringEncoding error:&error];
-	if(template==nil) {
-#ifdef DEBUG
-		NSLog(@"Error4: %@",error);
-#endif
-		return NO;
-	}
-	
-	NSString* output = [self _replaceInTemplate:template dictionary:dictionary error:&error];
-	if(output==nil) {
-#ifdef DEBUG
-		NSLog(@"Error5: %@",error);
-#endif
-		return NO;
-	}
-
-	if([output writeToFile:confPath atomically:YES encoding:NSUTF8StringEncoding error:&error]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error6: %@",error);
-#endif
-		return NO;
-	}
-	
-	// start the server
-	if([self _startTaskServerWithConfiguration:confPath]==NO) {
-#ifdef DEBUG
-		NSLog(@"Error7: Unable to start the server");
-#endif
-		return NO;
-	}
-	
-	return YES;
-}
-
--(BOOL)stop {
-	BOOL returnValue = NO;
-	if(_pid) {
-		[self _stopProcess:_pid];
-		NSString* confPath = [_path stringByAppendingPathComponent:PGHTTPFileConf];
-		[self _removeFileIfExists:confPath error:nil];
-		returnValue = YES;
-	}
-	[self _setPid:0];
-	return returnValue;
 }
 
 */

@@ -13,10 +13,9 @@ typedef enum {
 @class PGHTTPServer;
 
 @protocol PGHTTPServerDelegate <NSObject>
-	@required
+	@optional
 		-(void)server:(PGHTTPServer* )server startedWithURL:(NSURL* )url;
 		-(void)server:(PGHTTPServer* )server stoppedWithReturnCode:(int)returnCode;
-	@optional
 		-(void)server:(PGHTTPServer* )server log:(PGHTTPServerLog* )log;
 @end
 

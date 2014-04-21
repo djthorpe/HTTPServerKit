@@ -8,7 +8,7 @@ enum {
 	kHTTPServerErrorInvalidArgument = -101,
 };
 
-@interface Application : NSObject {
+@interface Application : NSObject <PGHTTPServerDelegate> {
 	BOOL _flag_verbose;
 	BOOL _flag_help;
 	NSUInteger _flag_port;
