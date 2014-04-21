@@ -11,7 +11,7 @@ enum {
 @interface Application : NSObject <PGHTTPServerDelegate> {
 	BOOL _flag_verbose;
 	BOOL _flag_help;
-	NSUInteger _flag_port;
+	int _flag_port;
 	NSString* _flag_docroot;
 	PGHTTPServer* _server;
 }

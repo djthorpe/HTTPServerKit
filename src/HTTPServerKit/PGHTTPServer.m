@@ -35,6 +35,7 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 #pragma mark PROPERTIES
 
 @synthesize bonjourName, bonjourType;
+@synthesize documentRoot = _documentRoot;
 @dynamic pid,port;
 
 -(NSUInteger)port {
@@ -147,6 +148,8 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 -(void)_backgroundTaskThread:(NSTask* )task {
 	@autoreleasepool {
 		[task launch];
+		[task waitUntilExit];
+		NSLog(@"task return value = %d",[task terminationStatus]);
 	}
 }
 
@@ -173,16 +176,6 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 		[NSThread sleepForTimeInterval:0.01];
 	}
 
-	// delegate
-	if([[self delegate] respondsToSelector:@selector(server:startedWithURL:)]) {
-		NSURL* url = nil;
-		[[self delegate] server:self startedWithURL:url];
-	}
-
-#ifdef DEBUG
-	NSLog(@"Task PID: %d",[task processIdentifier]);
-#endif
-	
 	// return the task
 	return task;
 }
@@ -206,6 +199,7 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 	}
 	_port = port;
 	_task = [self _startTask:binary arguments:arguments];
+	_documentRoot = documentRoot;
 	NSParameterAssert(_task);
 	_bonjour = [[NSNetService alloc] initWithDomain:@"local." type:[self bonjourType] name:[self bonjourName] port:port];
 	NSParameterAssert(_bonjour);
@@ -245,15 +239,10 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 }
 
 -(BOOL)stop {
-	if(_task) {
-		[_task terminate];
-	}
-	if(_bonjour) {
-		[_bonjour stop];
-	}
+	[_task terminate];
+	[_bonjour stop];
 	_task = nil;
-	_bonjour = nil;
-	return NO;
+	return YES;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -261,65 +250,27 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 
 -(void)netServiceDidPublish:(NSNetService* )sender {
 #ifdef DEBUG
-    NSLog(@"NSNetServiceDelegate: netServiceDidPublish: %@",sender);
+    NSLog(@"NSNetServiceDelegate: netServiceDidPublish: %@",[sender name]);
 #endif
-}
-
--(void)netService:(NSNetService* )service didNotPublish:(NSDictionary* )dict {
-#ifdef DEBUG
-    NSLog(@"NSNetServiceDelegate: Failed to publish: %@",dict);
-#endif
+	if([[self delegate] respondsToSelector:@selector(server:startedWithURL:)]) {
+		NSString* url = [NSString stringWithFormat:@"http://%@:%ld/",[sender name],[sender port]];
+		[[self delegate] server:self startedWithURL:[NSURL URLWithString:url]];
+	}
 }
 
 -(void)netServiceDidStop:(NSNetService* )sender {
 #ifdef DEBUG
     NSLog(@"NSNetServiceDelegate: Stopped: %@",sender);
 #endif
+	// tell delegate
+	if([[self delegate] respondsToSelector:@selector(serverStopped:)]) {
+		[[self delegate] serverStopped:self];
+	}
+	// deallocate the bonjour service
+	_bonjour = nil;
 }
-
 
 /*
-
--(NSURL* )URL {
-	NSString* url = [NSString stringWithFormat:@"http://%@:%d/",[[NSProcessInfo processInfo] hostName],[self  port]];
-	return [NSURL URLWithString:url];
-}
-
-
--(int)_portFromPid:(NSUInteger)pid {
-	NSString* portDirective = @"Listen ";
-	NSString* confPath = [_path stringByAppendingPathComponent:PGHTTPFileConf];
-	NSString* confString = [NSString stringWithContentsOfFile:confPath encoding:NSUTF8StringEncoding error:nil];
-	if(confString==nil) {
-		return -1;
-	}
-	int port = 0;
-	for(NSString* line in [confString componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]]) {
-		if([line hasPrefix:portDirective]) {
-			NSString* portString = [line stringByReplacingOccurrencesOfString:portDirective withString:@""];
-			port = [portString intValue];
-		}
-	}
-	return port;
-}
-
--(void)_setPid:(NSUInteger)pid {
-	if(pid==0) {
-		_state = PGHTTPServerStateStopped;
-		_pid = 0;
-		_port = 0;
-		[_bonjour stop];
-		_bonjour = nil;
-	} else {
-		_state = PGHTTPServerStateStarted;
-		_pid = pid;
-		_port = [self _portFromPid:pid];
-		_bonjour = [[NSNetService alloc] initWithDomain:@"local." type:[self bonjourType] name:[self bonjourName] port:_port];
-		NSParameterAssert(_bonjour);
-		[_bonjour setDelegate:self];
-		[_bonjour publish];
-	}
-}
 
 -(BOOL)_removeFileIfExists:(NSString* )path error:(NSError** )error {
 	BOOL isDir = NO;

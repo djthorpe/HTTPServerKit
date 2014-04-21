@@ -15,7 +15,7 @@ typedef enum {
 @protocol PGHTTPServerDelegate <NSObject>
 	@optional
 		-(void)server:(PGHTTPServer* )server startedWithURL:(NSURL* )url;
-		-(void)server:(PGHTTPServer* )server stoppedWithReturnCode:(int)returnCode;
+		-(void)serverStopped:(PGHTTPServer* )server;
 		-(void)server:(PGHTTPServer* )server log:(PGHTTPServerLog* )log;
 @end
 
@@ -24,6 +24,7 @@ typedef enum {
 		NSUInteger _port;
 		NSTask* _task;
 		NSNetService* _bonjour;
+		NSString* _documentRoot;
 }
 
 // constructor
@@ -35,6 +36,8 @@ typedef enum {
 @property (retain) NSString* bonjourType;
 @property (readonly) NSUInteger port;
 @property (readonly) int pid;
+@property (readonly) NSString* documentRoot;
+@property (readonly) PGHTTPPasswordFile* globalPasswordFile;
 
 // methods
 -(BOOL)startWithDocumentRoot:(NSString* )documentRoot;

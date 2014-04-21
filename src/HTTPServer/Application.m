@@ -17,10 +17,26 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 #pragma mark PRIVATE METHODS
 
 -(BOOL)_parseAppendArgument:(NSString* )argument {
+	if(_flag_docroot != nil) {
+		return NO;
+	}
+	BOOL isDir;
+	if([[NSFileManager defaultManager] fileExistsAtPath:argument isDirectory:&isDir]==NO || isDir==NO) {
+		return NO;
+	}
+	if([[NSFileManager defaultManager] isReadableFileAtPath:argument]==NO) {
+		return NO;
+	}
+	_flag_docroot = argument;
 	return YES;
 }
 
 -(BOOL)_parseOptionPort:(NSString* )argument {
+	int port = [argument intValue];
+	if(port < 1) {
+		return NO;
+	}
+	_flag_port = port;
 	return YES;
 }
 
@@ -46,8 +62,22 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-#pragma mark PUBLIC METHODS
+#pragma mark PGHTTPServerDelegate
 
+-(void)server:(PGHTTPServer *)server startedWithURL:(NSURL *)url {
+	if(_flag_verbose) {
+		NSLog(@"server started: %@",url);
+	}
+}
+
+-(void)server:(PGHTTPServer *)server log:(PGHTTPServerLog *)log {
+	if(_flag_verbose) {
+		NSLog(@"%@ => %ld",[log request],[log httpcode]);
+	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+#pragma mark PUBLIC METHODS
 
 -(void)setErrorWithCode:(NSInteger)code description:(NSString* )description {
 	NSDictionary* userInfo = @{
@@ -108,19 +138,19 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 	_server = [PGHTTPServer server];
 	NSParameterAssert(_server);
 	[_server setDelegate:self];
-	NSLog(@"Run %@",_server);
-	[_server startWithDocumentRoot:NSHomeDirectory()];
+	if(_flag_docroot==nil) {
+		_flag_docroot = NSHomeDirectory();
+	}
+	if(_flag_port) {
+		[_server startWithDocumentRoot:_flag_docroot port:_flag_port];
+	} else {
+		[_server startWithDocumentRoot:_flag_docroot];
+	}
 }
 
 -(void)stop:(id)sender {
-	NSLog(@"Stop");
 	[_server stop];
 	CFRunLoopStop([[NSRunLoop currentRunLoop] getCFRunLoop]);
 }
-
--(void)server:(PGHTTPServer *)server log:(PGHTTPServerLog *)log {
-	NSLog(@"%@ => %ld",[log request],[log httpcode]);
-}
-
 
 @end

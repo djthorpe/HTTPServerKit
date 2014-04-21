@@ -32,6 +32,8 @@
 		149E5EF618A1957C001F6A54 /* PGHTTPServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 140F11DC18A186B1008E1E4F /* PGHTTPServer.m */; };
 		149E5EF718A19733001F6A54 /* PGHTTPServer.h in Headers */ = {isa = PBXBuildFile; fileRef = 140F11DB18A186B1008E1E4F /* PGHTTPServer.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		149E5EF818A19738001F6A54 /* HTTPServerKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 140F11DA18A186B1008E1E4F /* HTTPServerKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		6E76811A19058E8F004BA45F /* PGHTTPPasswordFile.h in Headers */ = {isa = PBXBuildFile; fileRef = 6E76811819058E8F004BA45F /* PGHTTPPasswordFile.h */; };
+		6E76811B19058E8F004BA45F /* PGHTTPPasswordFile.m in Sources */ = {isa = PBXBuildFile; fileRef = 6E76811919058E8F004BA45F /* PGHTTPPasswordFile.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -97,6 +99,8 @@
 		147A5E2F18A7B1B90027F6BE /* GBOptionsHelper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GBOptionsHelper.m; sourceTree = "<group>"; };
 		147A5E3018A7B1B90027F6BE /* GBSettings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GBSettings.h; sourceTree = "<group>"; };
 		147A5E3118A7B1B90027F6BE /* GBSettings.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GBSettings.m; sourceTree = "<group>"; };
+		6E76811819058E8F004BA45F /* PGHTTPPasswordFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PGHTTPPasswordFile.h; sourceTree = "<group>"; };
+		6E76811919058E8F004BA45F /* PGHTTPPasswordFile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PGHTTPPasswordFile.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -187,6 +191,8 @@
 			children = (
 				140F11D918A186B1008E1E4F /* HTTPServerKit-Info.plist */,
 				140F11DA18A186B1008E1E4F /* HTTPServerKit.h */,
+				6E76811819058E8F004BA45F /* PGHTTPPasswordFile.h */,
+				6E76811919058E8F004BA45F /* PGHTTPPasswordFile.m */,
 				140F11DB18A186B1008E1E4F /* PGHTTPServer.h */,
 				140F11DC18A186B1008E1E4F /* PGHTTPServer.m */,
 				141747EF19055FC8000ED91C /* PGHTTPServerLog.h */,
@@ -246,6 +252,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6E76811A19058E8F004BA45F /* PGHTTPPasswordFile.h in Headers */,
 				149E5EF818A19738001F6A54 /* HTTPServerKit.h in Headers */,
 				149E5EF718A19733001F6A54 /* PGHTTPServer.h in Headers */,
 				141747F119055FC8000ED91C /* PGHTTPServerLog.h in Headers */,
@@ -367,6 +374,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				141747F219055FC8000ED91C /* PGHTTPServerLog.m in Sources */,
+				6E76811B19058E8F004BA45F /* PGHTTPPasswordFile.m in Sources */,
 				149E5EF618A1957C001F6A54 /* PGHTTPServer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
