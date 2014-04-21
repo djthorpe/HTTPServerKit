@@ -88,28 +88,24 @@ NSString* const PGHTTPPasswdExecutable = @"sthttpd-current-mac_x86_64/sbin/th_ht
 	[task setLaunchPath:[binary path]];
 	[task setArguments:arguments];
 
-	NSFileHandle* input = [NSFileHandle fileHandleWithStandardInput];
 	NSPipe* inPipe = [NSPipe new];
+	NSPipe* outPipe = [NSPipe new];
+	NSString* password2 = [NSString stringWithFormat:@"%@\n",password];
+	NSData* inData = [password2 dataUsingEncoding:NSUTF8StringEncoding];
+	
 	[task setStandardInput:inPipe];
-	[input waitForDataInBackgroundAndNotify];
-	
-	[[NSNotificationCenter defaultCenter] addObserverForName:NSFileHandleDataAvailableNotification object:inPipe queue:nil usingBlock:^(NSNotification *note) {
-		NSData* inData = [input availableData];
-		if ([inData length] == 0) {
-			NSLog(@"EOF on standard input");
-			// EOF on standard input.
-			[[inPipe fileHandleForWriting] closeFile];
-		} else {
-			NSLog(@"read from input");
-			// Read from standard input and write to shell input pipe.
-			[[inPipe fileHandleForWriting] writeData:inData];
-			// Continue waiting for standard input.
-			[input waitForDataInBackgroundAndNotify];
-		}
-	}];
-	
+	[task setStandardOutput:outPipe];
+//	[task setStandardError:outPipe];
 	[task launch];
+	
+	[[inPipe fileHandleForWriting] writeData:inData];
+	[[inPipe fileHandleForWriting] writeData:inData];
+	[[inPipe fileHandleForWriting] closeFile];
+	
 	[task waitUntilExit];
+	
+	NSLog(@"termination status %d",[task terminationStatus]);
+	
 	return YES;
 }
 
