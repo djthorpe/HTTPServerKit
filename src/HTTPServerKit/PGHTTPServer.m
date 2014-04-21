@@ -36,7 +36,7 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 
 @synthesize bonjourName, bonjourType;
 @synthesize documentRoot = _documentRoot;
-@dynamic pid,port;
+@dynamic pid,port,globalPasswordFile;
 
 -(NSUInteger)port {
 	return _port;
@@ -44,6 +44,13 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 
 -(int)pid {
 	return [_task processIdentifier];
+}
+
+-(PGHTTPPasswordFile* )globalPasswordFile {
+	if(_documentRoot==nil) {
+		return nil;
+	}
+	return [PGHTTPPasswordFile passwordFileForPath:_documentRoot];
 }
 
 ////////////////////////////////////////////////////////////////////////////////

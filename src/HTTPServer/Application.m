@@ -68,6 +68,10 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 	if(_flag_verbose) {
 		NSLog(@"server started: %@",url);
 	}
+	
+	PGHTTPPasswordFile* passwd = [server globalPasswordFile];
+	[passwd setPassword:@"XX" forUser:@"djt"];
+	
 }
 
 -(void)server:(PGHTTPServer *)server log:(PGHTTPServerLog *)log {

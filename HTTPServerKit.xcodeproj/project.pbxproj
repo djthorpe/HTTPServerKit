@@ -100,7 +100,7 @@
 		147A5E3018A7B1B90027F6BE /* GBSettings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GBSettings.h; sourceTree = "<group>"; };
 		147A5E3118A7B1B90027F6BE /* GBSettings.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GBSettings.m; sourceTree = "<group>"; };
 		6E76811819058E8F004BA45F /* PGHTTPPasswordFile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PGHTTPPasswordFile.h; sourceTree = "<group>"; };
-		6E76811919058E8F004BA45F /* PGHTTPPasswordFile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PGHTTPPasswordFile.m; sourceTree = "<group>"; };
+		6E76811919058E8F004BA45F /* PGHTTPPasswordFile.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PGHTTPPasswordFile.m; sourceTree = "<group>"; wrapsLines = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
