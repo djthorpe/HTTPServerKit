@@ -10,6 +10,6 @@
 @property (readonly) NSArray* users;
 
 // methods
--(void)setPassword:(NSString* )password forUser:(NSString* )user;
+-(BOOL)setPassword:(NSString* )password forUser:(NSString* )user;
 
 @end
