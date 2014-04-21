@@ -16,6 +16,8 @@ typedef enum {
 	@required
 		-(void)server:(PGHTTPServer* )server startedWithURL:(NSURL* )url;
 		-(void)server:(PGHTTPServer* )server stoppedWithReturnCode:(int)returnCode;
+	@optional
+		-(void)server:(PGHTTPServer* )server log:(PGHTTPServerLog* )log;
 @end
 
 @interface PGHTTPServer : NSObject <NSNetServiceDelegate> {
@@ -37,7 +39,7 @@ typedef enum {
 
 // methods
 -(BOOL)startWithDocumentRoot:(NSString* )documentRoot;
--(BOOL)startWithDocumentRoot:(NSString* )documentRoot port:(NSUInteger)port;
+-(BOOL)startWithDocumentRoot:(NSString* )documentRoot port:(int)port;
 -(BOOL)stop;
 
 @end

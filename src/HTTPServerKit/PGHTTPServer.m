@@ -9,7 +9,6 @@
 // constants
 NSString* const PGHTTPServerErrorDomain = @"PGHTTPServerErrorDomain";
 NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttpd";
-NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 
 @implementation PGHTTPServer
 
@@ -63,7 +62,7 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 	return [self _URLForResource:PGHTTPServerExecutable];
 }
 
-+(NSUInteger)_getUnusedPortWithError_impl:(NSError** )error {
++(int)_getUnusedPortWithError_impl:(NSError** )error {
 	int sfd = socket(AF_INET,SOCK_STREAM,0);
 	if(sfd < 0) {
 		(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorNetwork userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithUTF8String:strerror(errno)] }];
@@ -88,10 +87,10 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 	return addr.sin_port;
 }
 
-+(NSUInteger)_getUnusedPortWithError:(NSError** )error {
-	NSUInteger unusedPort = 0;
++(int)_getUnusedPortWithError:(NSError** )error {
+	int unusedPort = 0;
 	NSUInteger attempts = 0;
-	NSUInteger portMin = 1025;
+	int portMin = 1025;
 	do {
 		unusedPort = [self _getUnusedPortWithError_impl:error];
 	} while(unusedPort < portMin && (attempts++) < 10); // skip root-only ports
@@ -102,33 +101,100 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 	return unusedPort;
 }
 
-+(NSTask* )_startTask:(NSString* )theBinary arguments:(NSArray* )theArguments {
-	NSParameterAssert(theBinary && [theBinary isKindOfClass:[NSString class]]);
-	NSParameterAssert(theArguments && [theArguments isKindOfClass:[NSArray class]]);
-	NSTask* theTask = [[NSTask alloc] init];
-	[theTask setLaunchPath:theBinary];
-	[theTask setArguments:theArguments];
-	[theTask launch];
-	return theTask;
+////////////////////////////////////////////////////////////////////////////////
+#pragma mark Logging
+
+-(void)_removeNotification {
+	NSNotificationCenter* theNotificationCenter = [NSNotificationCenter defaultCenter];
+	[theNotificationCenter removeObserver:self];
 }
 
--(void)_backgroundServerThread:(NSArray* )arguments {
-	@autoreleasepool {
-		NSURL* serverExecutable = [[self class] serverExecutable];
-#ifdef DEBUG
-		NSLog(@"Start Task: %@\nwith args: %@",serverExecutable,arguments);
-#endif
-		NSParameterAssert(_task==nil);
-		_task = [[self class] _startTask:[serverExecutable path] arguments:arguments];
+-(void)_addNotificationForFileHandle:(NSFileHandle* )theFileHandle {
+	NSNotificationCenter* theNotificationCenter = [NSNotificationCenter defaultCenter];
+    [theNotificationCenter addObserver:self
+							  selector:@selector(_getTaskData:)
+								  name:NSFileHandleReadCompletionNotification
+								object:nil];
+	[theFileHandle readInBackgroundAndNotify];
+}
+
+-(void)_delegateMessageFromData:(NSData* )theData {
+	NSString* theMessage = [[NSString alloc] initWithData:theData encoding:NSUTF8StringEncoding];
+	NSArray* theArray = [theMessage componentsSeparatedByString:@"\n"];
+	NSEnumerator* theEnumerator = [theArray objectEnumerator];
+	NSString* theLine = nil;
+	while(theLine = [theEnumerator nextObject]) {
+		theLine = [theLine stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+		if([theLine length]) {
+			PGHTTPServerLog* log = [[PGHTTPServerLog alloc] initWithLine:theLine];
+			if(log && [[self delegate] respondsToSelector:@selector(server:log:)]) {
+				[[self delegate] server:self log:log];
+			}
+		}
 	}
 }
 
+-(void)_getTaskData:(NSNotification* )theNotification {
+	NSData* theData = [[theNotification userInfo] objectForKey:NSFileHandleNotificationDataItem];
+	[self _delegateMessageFromData:theData];
+	if([theData length]) {
+		// get more data
+		[[theNotification object] readInBackgroundAndNotify];
+	}
+}
 
--(BOOL)_startServerWithDocumentRoot:(NSString* )documentRoot port:(NSUInteger)port checkSymlinks:(BOOL)isCheckSymlinks {
+////////////////////////////////////////////////////////////////////////////////
+#pragma mark Server starting
+
+-(void)_backgroundTaskThread:(NSTask* )task {
+	@autoreleasepool {
+		[task launch];
+	}
+}
+
+-(NSTask* )_startTask:(NSString* )theBinary arguments:(NSArray* )theArguments {
+	NSParameterAssert(theBinary && [theBinary isKindOfClass:[NSString class]]);
+	NSParameterAssert(theArguments && [theArguments isKindOfClass:[NSArray class]]);
+	NSTask* task = [[NSTask alloc] init];
+	NSPipe* thePipe = [[NSPipe alloc] init];
+
+	[task setLaunchPath:theBinary];
+	[task setArguments:theArguments];
+	[task setStandardOutput:thePipe];
+	[task setStandardError:thePipe];
+
+	// add a notification for the pipe's standard out and error
+	[self _removeNotification];
+	[self _addNotificationForFileHandle:[thePipe fileHandleForReading]];
+
+	// start task in background
+	[NSThread detachNewThreadSelector:@selector(_backgroundTaskThread:) toTarget:self withObject:task];
+
+	// wait for task to be running
+	while(![task processIdentifier]) {
+		[NSThread sleepForTimeInterval:0.01];
+	}
+
+	// delegate
+	if([[self delegate] respondsToSelector:@selector(server:startedWithURL:)]) {
+		
+	}
+
+#ifdef DEBUG
+	NSLog(@"Task PID: %d",[task processIdentifier]);
+#endif
+	
+	// return the task
+	return task;
+}
+
+-(BOOL)_startServerWithDocumentRoot:(NSString* )documentRoot port:(int)port checkSymlinks:(BOOL)isCheckSymlinks {
 	NSParameterAssert(documentRoot);
 	NSParameterAssert(port > 0);
+	
+	NSString* binary = [[[self class] serverExecutable] path];
 	NSMutableArray* arguments = [NSMutableArray array];
-	[arguments addObjectsFromArray:@[ @"-p",[NSString stringWithFormat:@"%lu",port]]];
+	[arguments addObjectsFromArray:@[ @"-p",[NSString stringWithFormat:@"%d",port]]];
 	[arguments addObjectsFromArray:@[ @"-d",documentRoot]];
 	[arguments addObjectsFromArray:@[ @"-l",@"/dev/stdout"]];
 	[arguments addObjectsFromArray:@[ @"-D"]];
@@ -137,8 +203,18 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 	if(isCheckSymlinks==NO) {
 		[arguments addObjectsFromArray:@[ @"-nos"]];
 	}
-	
-	[NSThread detachNewThreadSelector:@selector(_backgroundServerThread:) toTarget:self withObject:arguments];
+
+	if(_task != nil) {
+		return NO;
+	}
+	_task = [self _startTask:binary arguments:arguments];
+	NSParameterAssert(_task);
+
+	// register bonjour
+	NSParameterAssert(_bonjour==nil);
+	_bonjour = [[NSNetService alloc] initWithDomain:@"local." type:[self bonjourType] name:[self bonjourName] port:port];
+	[_bonjour setDelegate:self];
+	[_bonjour publish];
 	
 	return YES;
 }
@@ -146,8 +222,9 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark PUBLIC METHODS
 
--(BOOL)startWithDocumentRoot:(NSString* )documentRoot port:(NSUInteger)port {
+-(BOOL)startWithDocumentRoot:(NSString* )documentRoot port:(int)port {
 	NSParameterAssert(documentRoot);
+	NSParameterAssert(port >= 0);
 	// check document root is readable
 	BOOL isPath;
 	if([[NSFileManager defaultManager] fileExistsAtPath:documentRoot isDirectory:&isPath]==NO || isPath==NO) {
@@ -159,18 +236,13 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 		port = [[self class] _getUnusedPortWithError:&error];
 		if(port==0) {
 #ifdef DEBUG
-			NSLog(@"Error1: %@",error);
+			NSLog(@"Error: %@",error);
 #endif
 			// couldn't find a standard port
 			return NO;
 		}
 	}
-	
-	BOOL isStarted = [self _startServerWithDocumentRoot:documentRoot port:port checkSymlinks:NO];
-	
-	// TODO: Bonjour
-	
-	return isStarted;
+	return [self _startServerWithDocumentRoot:documentRoot port:port checkSymlinks:NO];
 }
 
 -(BOOL)startWithDocumentRoot:(NSString* )documentRoot {
@@ -181,11 +253,22 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 	if(_task) {
 		[_task terminate];
 	}
+	if(_bonjour) {
+		[_bonjour stop];
+	}
+	_task = nil;
+	_bonjour = nil;
 	return NO;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark NSNetServiceDelegate
+
+-(void)netServiceDidPublish:(NSNetService *)sender {
+#ifdef DEBUG
+    NSLog(@"NSNetServiceDelegate: netServiceDidPublish: %@",sender);
+#endif
+}
 
 -(void)netService:(NSNetService* )service didNotPublish:(NSDictionary* )dict {
 #ifdef DEBUG
@@ -235,44 +318,6 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 		[_bonjour setDelegate:self];
 		[_bonjour publish];
 	}
-}
-
--(NSString* )_replaceInTemplate:(NSString* )template dictionary:(NSDictionary* )values error:(NSError** )error {
-	NSParameterAssert(template);
-	NSParameterAssert(values);
-	NSScanner* scanner = [NSScanner scannerWithString:template];
-	NSString* tmp = nil;
-	NSMutableString* output = [NSMutableString stringWithCapacity:[template length]];
-	NSUInteger state = 0;
-	[scanner setCharactersToBeSkipped:[NSCharacterSet characterSetWithCharactersInString:@""]];
-	while([scanner isAtEnd]==NO) {
-		switch(state) {
-			case 0:
-				if([scanner scanUpToString:@"{" intoString:&tmp]==YES) {
-					state = 1;
-				}
-				break;
-			case 1:
-				[scanner scanString:@"{" intoString:nil];
-				if([scanner scanUpToString:@"}" intoString:&tmp]==YES) {
-					[scanner scanString:@"}" intoString:nil];
-					NSString* value = [[values objectForKey:tmp] description];
-					if(value==nil) {
-						(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorTemplate userInfo:@{ NSLocalizedDescriptionKey:[NSString stringWithFormat:@"Unknown template parameter: %@",value] }];
-						return nil;
-					} else {
-						tmp = value;
-					}
-					state = 0;
-				} else {
-					(*error) = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorTemplate userInfo:@{ NSLocalizedDescriptionKey:@"Missing closing brace" }];
-					return nil;
-				}
-				break;
-		}
-		[output appendString:tmp];
-	}
-	return output;
 }
 
 -(BOOL)_removeFileIfExists:(NSString* )path error:(NSError** )error {

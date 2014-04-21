@@ -22,6 +22,8 @@
 
 /* Begin PBXBuildFile section */
 		140F11AE18A18679008E1E4F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 140F11AD18A18679008E1E4F /* Cocoa.framework */; };
+		141747F119055FC8000ED91C /* PGHTTPServerLog.h in Headers */ = {isa = PBXBuildFile; fileRef = 141747EF19055FC8000ED91C /* PGHTTPServerLog.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		141747F219055FC8000ED91C /* PGHTTPServerLog.m in Sources */ = {isa = PBXBuildFile; fileRef = 141747F019055FC8000ED91C /* PGHTTPServerLog.m */; };
 		147A5E1218A7AD770027F6BE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 147A5E1118A7AD770027F6BE /* Foundation.framework */; };
 		147A5E1F18A7ADC20027F6BE /* Application.m in Sources */ = {isa = PBXBuildFile; fileRef = 147A5E1E18A7ADC20027F6BE /* Application.m */; };
 		147A5E2118A7ADDC0027F6BE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 147A5E2018A7ADDC0027F6BE /* main.m */; };
@@ -77,6 +79,8 @@
 		140F11E118A186B1008E1E4F /* sthttpd-2.26.4.tar.gz */ = {isa = PBXFileReference; lastKnownFileType = archive.gzip; path = "sthttpd-2.26.4.tar.gz"; sourceTree = "<group>"; };
 		140F11E218A186B1008E1E4F /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		140F11E318A186B1008E1E4F /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
+		141747EF19055FC8000ED91C /* PGHTTPServerLog.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PGHTTPServerLog.h; sourceTree = "<group>"; };
+		141747F019055FC8000ED91C /* PGHTTPServerLog.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PGHTTPServerLog.m; sourceTree = "<group>"; };
 		147A5E1018A7AD770027F6BE /* HTTPServer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = HTTPServer; sourceTree = BUILT_PRODUCTS_DIR; };
 		147A5E1118A7AD770027F6BE /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		147A5E1D18A7ADC20027F6BE /* Application.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Application.h; sourceTree = "<group>"; };
@@ -185,6 +189,8 @@
 				140F11DA18A186B1008E1E4F /* HTTPServerKit.h */,
 				140F11DB18A186B1008E1E4F /* PGHTTPServer.h */,
 				140F11DC18A186B1008E1E4F /* PGHTTPServer.m */,
+				141747EF19055FC8000ED91C /* PGHTTPServerLog.h */,
+				141747F019055FC8000ED91C /* PGHTTPServerLog.m */,
 			);
 			path = HTTPServerKit;
 			sourceTree = "<group>";
@@ -242,6 +248,7 @@
 			files = (
 				149E5EF818A19738001F6A54 /* HTTPServerKit.h in Headers */,
 				149E5EF718A19733001F6A54 /* PGHTTPServer.h in Headers */,
+				141747F119055FC8000ED91C /* PGHTTPServerLog.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -359,6 +366,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				141747F219055FC8000ED91C /* PGHTTPServerLog.m in Sources */,
 				149E5EF618A1957C001F6A54 /* PGHTTPServer.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
