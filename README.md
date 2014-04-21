@@ -37,14 +37,14 @@ You'll need a new copy phase when building your Cocoa-app, so it copies the
 `HTTPServerKit` framework over to your Package `Frameworks` folder, and include
 the following line in your source code:
 
-```
+```objc
 #import <HTTPServerKit/HTTPServerKit.h>
 ```
 
 You create a server instance and start serving using the following kind of
 code:
 
-```
+```objc
 	PGHTTPServer* server = [PGHTTPServer server];
 	int port = ....;
 	NSString* docroot = ...;
@@ -88,7 +88,7 @@ server remotely. Whenever a request is served, the `server:log:` message is
 sent which gives information on the request. The properties of the `PGHTTPServerLog`
 object are as follows:
 
-```
+```objc
 @property (retain) NSString* hostname;
 @property (retain) NSString* user;
 @property (retain) NSString* group;
@@ -111,7 +111,7 @@ retrieved using `[server globalPasswordFile]` once the server has been
 started. This method returns `nil` if the document root directory is not
 writable or if the server has not yet been started. For example,
 
-```
+```objc
    PGHTTPPasswordFile* passwd = [server globalPasswordFile];
 ```
 
