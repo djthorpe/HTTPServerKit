@@ -69,12 +69,12 @@ The server always publishes it's location using Bonjour (http://www.apple.com/su
 You can set the `[server bonjourName]` and `[server bonjourType]` properties
 of the server to publish the service as a non-HTTP service or with a different name.
 
-Using the delegate
-------------------
+Implementing the delegate
+-------------------------
 
 The delegate protocol is as follows:
 
-```
+```objc
 @protocol PGHTTPServerDelegate <NSObject>
 	@optional
 		-(void)server:(PGHTTPServer* )server startedWithURL:(NSURL* )url;
