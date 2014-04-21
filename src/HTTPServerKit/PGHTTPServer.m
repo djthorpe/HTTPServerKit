@@ -102,15 +102,45 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 	return unusedPort;
 }
 
-+(int)_startTask:(NSString* )theBinary arguments:(NSArray* )theArguments {
++(NSTask* )_startTask:(NSString* )theBinary arguments:(NSArray* )theArguments {
 	NSParameterAssert(theBinary && [theBinary isKindOfClass:[NSString class]]);
 	NSParameterAssert(theArguments && [theArguments isKindOfClass:[NSArray class]]);
 	NSTask* theTask = [[NSTask alloc] init];
 	[theTask setLaunchPath:theBinary];
 	[theTask setArguments:theArguments];
 	[theTask launch];
-	[theTask waitUntilExit];
-	return [theTask terminationStatus];
+	return theTask;
+}
+
+-(void)_backgroundServerThread:(NSArray* )arguments {
+	@autoreleasepool {
+		NSURL* serverExecutable = [[self class] serverExecutable];
+#ifdef DEBUG
+		NSLog(@"Start Task: %@\nwith args: %@",serverExecutable,arguments);
+#endif
+		NSParameterAssert(_task==nil);
+		_task = [[self class] _startTask:[serverExecutable path] arguments:arguments];
+	}
+}
+
+
+-(BOOL)_startServerWithDocumentRoot:(NSString* )documentRoot port:(NSUInteger)port checkSymlinks:(BOOL)isCheckSymlinks {
+	NSParameterAssert(documentRoot);
+	NSParameterAssert(port > 0);
+	NSMutableArray* arguments = [NSMutableArray array];
+	[arguments addObjectsFromArray:@[ @"-p",[NSString stringWithFormat:@"%lu",port]]];
+	[arguments addObjectsFromArray:@[ @"-d",documentRoot]];
+	[arguments addObjectsFromArray:@[ @"-l",@"/dev/stdout"]];
+	[arguments addObjectsFromArray:@[ @"-D"]];
+	// flags
+	// -p <port> -d <docroot> -nos (no symlinks) -l /dev/null -D
+	if(isCheckSymlinks==NO) {
+		[arguments addObjectsFromArray:@[ @"-nos"]];
+	}
+	
+	[NSThread detachNewThreadSelector:@selector(_backgroundServerThread:) toTarget:self withObject:arguments];
+	
+	return YES;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -135,22 +165,12 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 			return NO;
 		}
 	}
-
-	NSURL* serverExecutable = [[self class] serverExecutable];
-	NSArray* arguments = @[
-		@"-p",[NSString stringWithFormat:@"%lu",port],
-		@"-d",documentRoot,
-		@"-l",@"/dev/null",
-		@"-D"
-	];
-
-	int returnCode = [[self class] _startTask:[serverExecutable path] arguments:arguments];
 	
-	// flags
-	// -p <port> -d <docroot> -nos (no symlinks) -l /dev/null -D
+	BOOL isStarted = [self _startServerWithDocumentRoot:documentRoot port:port checkSymlinks:NO];
 	
+	// TODO: Bonjour
 	
-	return YES;
+	return isStarted;
 }
 
 -(BOOL)startWithDocumentRoot:(NSString* )documentRoot {
@@ -158,6 +178,9 @@ NSString* const kPGHTTPServerFilePID = @"httpd.pid";
 }
 
 -(BOOL)stop {
+	if(_task) {
+		[_task terminate];
+	}
 	return NO;
 }
 

@@ -125,6 +125,7 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 
 -(void)stop:(id)sender {
 	NSLog(@"Stop");
+	[_server stop];
 	CFRunLoopStop([[NSRunLoop currentRunLoop] getCFRunLoop]);
 }
 
