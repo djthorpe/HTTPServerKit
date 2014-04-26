@@ -25,11 +25,12 @@ if [ "${UNPUSHED}" != "" ] ; then
 fi
 
 # perform the tagging
-git tag -a -m "Tagging version ${REVISION}" "${REVISION}"
-git push origin --tags
+git tag -a -m "Tagging version ${REVISION}" "${REVISION}"  || exit -1
+git push origin --tags  || exit -1
 
 # build mac targets
 xcodebuild -project ${PROJECT} -target "HTTPServerKit" -configuration ${CONFIGURATION} || exit -1
+xcodebuild -project ${PROJECT} -target "HTTPServer" -configuration ${CONFIGURATION} || exit -1
 
 # report
 echo "Tagged release: ${REVISION}"
