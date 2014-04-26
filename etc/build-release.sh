@@ -11,7 +11,7 @@ PROJECT=${CURRENT_PATH}/../HTTPServerKit.xcodeproj
 # determine tag name
 GIT_REVISION_HEAD=`git rev-parse HEAD`
 DATE_REVISION=`date +"%Y%m%d"`
-REVISION="${DATE_REVISION}-${GIT_REVISION_HEAD}"
+REVISION="${DATE_REVISION}-${GIT_REVISION_HEAD:0:7}"
 UNPUSHED=`git log --branches --not --remotes --simplify-by-decoration --decorate --oneline`
 
 # see what hasn't been pushed to origin
