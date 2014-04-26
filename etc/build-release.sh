@@ -20,6 +20,9 @@ if [ "${UNPUSHED}" != "" ] ; then
 	echo "  ${UNPUSHED}"
 fi
 
+# add VERSION file
+echo "${REVISION}" > ${CURRENT_PATH}/../VERSION
+
 # perform the tagging
 git tag -a -m "Tagging version ${REVISION}" "${REVISION}"
 git push origin --tags
