@@ -14,14 +14,15 @@ DATE_REVISION=`date +"%Y%m%d"`
 REVISION="${DATE_REVISION}-${GIT_REVISION_HEAD:0:7}"
 UNPUSHED=`git log --branches --not --remotes --simplify-by-decoration --decorate --oneline`
 
+# add VERSION file
+echo "${REVISION}" > ${CURRENT_PATH}/../VERSION
+
 # see what hasn't been pushed to origin
 if [ "${UNPUSHED}" != "" ] ; then
 	echo "Error: unpushed commits, use 'git push origin' first"
 	echo "  ${UNPUSHED}"
+	exit -1
 fi
-
-# add VERSION file
-echo "${REVISION}" > ${CURRENT_PATH}/../VERSION
 
 # perform the tagging
 git tag -a -m "Tagging version ${REVISION}" "${REVISION}"

@@ -415,6 +415,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				SYMROOT = /Volumes/Scratch/Build;
 			};
 			name = Debug;
 		};
@@ -423,6 +424,7 @@
 			buildSettings = {
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				SDKROOT = macosx;
+				SYMROOT = /Volumes/Scratch/Build;
 			};
 			name = Release;
 		};
