@@ -12,14 +12,22 @@ PROJECT=${CURRENT_PATH}/../HTTPServerKit.xcodeproj
 GIT_REVISION_HEAD=`git rev-parse HEAD`
 DATE_REVISION=`date +"%Y%m%d"`
 REVISION="${DATE_REVISION}-${GIT_REVISION_HEAD}"
-echo "REVISION=${REVISION}"
+UNPUSHED=`git log --branches --not --remotes --simplify-by-decoration --decorate --oneline`
+
+# see what hasn't been pushed to origin
+if [ "${UNPUSHED}" != "" ] ; then
+	echo "Error: unpushed commits, use 'git push origin' first"
+	echo "  ${UNPUSHED}"
+fi
 
 # perform the tagging
 git tag -a -m "Tagging version ${REVISION}" "${REVISION}"
 git push origin --tags
-exit 1
 
 # build mac targets
 xcodebuild -project ${PROJECT} -target "HTTPServerKit" -configuration ${CONFIGURATION} || exit -1
+
+# report
+echo "Tagged release: ${REVISION}"
 
 
