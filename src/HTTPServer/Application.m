@@ -61,22 +61,22 @@ NSString* const kHTTPServerIdentifier = @"com.mutablelogic.HTTPServer";
 	return [self _applicationSupportURLWithSubpath:nil error:error];
 }
 
+-(void)log:(NSString* )message {
+	fprintf(stderr,"%s\n",[message UTF8String]);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark PGHTTPServerDelegate
 
 -(void)server:(PGHTTPServer *)server startedWithURL:(NSURL *)url {
 	if(_flag_verbose) {
-		NSLog(@"server started: %@",url);
+		[self log:[NSString stringWithFormat:@"Server started: %@",url]];
 	}
-	
-	PGHTTPPasswordFile* passwd = [server globalPasswordFile];
-	[passwd setPassword:@"XX" forUser:@"djt"];
-	
 }
 
 -(void)server:(PGHTTPServer *)server log:(PGHTTPServerLog *)log {
 	if(_flag_verbose) {
-		NSLog(@"%@ => %ld",[log request],[log httpcode]);
+		[self log:[NSString stringWithFormat:@"%@ => %ld",[log request],[log httpcode]]];
 	}
 }
 
