@@ -154,9 +154,14 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 
 -(void)_backgroundTaskThread:(NSTask* )task {
 	@autoreleasepool {
+#ifdef DEBUG
+		NSLog(@"task launch = %@ %@",[task launchPath],[task arguments]);
+#endif
 		[task launch];
 		[task waitUntilExit];
+#ifdef DEBUG
 		NSLog(@"task return value = %d",[task terminationStatus]);
+#endif
 	}
 }
 
@@ -252,6 +257,29 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 	return YES;
 }
 
+-(NSString* )_netServiceErrorStringFromCode:(NSInteger)errorCode {
+	switch(errorCode) {
+		case NSNetServicesUnknownError:
+			return @"NSNetServicesUnknownError";
+		case NSNetServicesCollisionError:
+			return @"NSNetServicesCollisionError";
+		case NSNetServicesNotFoundError:
+			return @"NSNetServicesNotFoundError";
+		case NSNetServicesActivityInProgress:
+			return @"NSNetServicesBadArgumentError";
+		case NSNetServicesBadArgumentError:
+			return @"NSNetServicesBadArgumentError";
+		case NSNetServicesCancelledError:
+			return @"NSNetServicesCancelledError";
+		case NSNetServicesInvalidError:
+			return @"NSNetServicesInvalidError";
+		case NSNetServicesTimeoutError:
+			return @"NSNetServicesInvalidError";
+		default:
+			return [NSString stringWithFormat:@"Error code: %ld",errorCode];   
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark NSNetServiceDelegate
 
@@ -275,6 +303,18 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 	}
 	// deallocate the bonjour service
 	_bonjour = nil;
+}
+
+-(void)netService:(NSNetService *)sender didNotPublish:(NSDictionary *)errorDict {
+#ifdef DEBUG
+    NSLog(@"NSNetServiceDelegate: Did not publish: %@",errorDict);
+#endif
+	NSInteger errorCode = [[errorDict objectForKey:NSNetServicesErrorCode] integerValue];
+	NSError* error = [NSError errorWithDomain:@"NSNetServices" code:errorCode userInfo:@{ NSLocalizedDescriptionKey: [self _netServiceErrorStringFromCode:errorCode] }];
+	// tell delegate
+	if([[self delegate] respondsToSelector:@selector(server:error:)]) {
+		[[self delegate] server:self error:error];
+	}	
 }
 
 /*

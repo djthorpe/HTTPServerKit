@@ -17,6 +17,7 @@ typedef enum {
 		-(void)server:(PGHTTPServer* )server startedWithURL:(NSURL* )url;
 		-(void)serverStopped:(PGHTTPServer* )server;
 		-(void)server:(PGHTTPServer* )server log:(PGHTTPServerLog* )log;
+		-(void)server:(PGHTTPServer* )server error:(NSError* )error;
 @end
 
 @interface PGHTTPServer : NSObject <NSNetServiceDelegate> {

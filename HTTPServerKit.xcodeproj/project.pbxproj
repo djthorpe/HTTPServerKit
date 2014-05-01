@@ -76,7 +76,7 @@
 		140F11D918A186B1008E1E4F /* HTTPServerKit-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "HTTPServerKit-Info.plist"; sourceTree = "<group>"; };
 		140F11DA18A186B1008E1E4F /* HTTPServerKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HTTPServerKit.h; sourceTree = "<group>"; };
 		140F11DB18A186B1008E1E4F /* PGHTTPServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PGHTTPServer.h; sourceTree = "<group>"; };
-		140F11DC18A186B1008E1E4F /* PGHTTPServer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PGHTTPServer.m; sourceTree = "<group>"; };
+		140F11DC18A186B1008E1E4F /* PGHTTPServer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PGHTTPServer.m; sourceTree = "<group>"; wrapsLines = 0; };
 		140F11DE18A186B1008E1E4F /* build-release.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "build-release.sh"; sourceTree = "<group>"; };
 		140F11DF18A186B1008E1E4F /* build-sthttpd.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "build-sthttpd.sh"; sourceTree = "<group>"; };
 		140F11E118A186B1008E1E4F /* sthttpd-2.26.4.tar.gz */ = {isa = PBXFileReference; lastKnownFileType = archive.gzip; path = "sthttpd-2.26.4.tar.gz"; sourceTree = "<group>"; };
