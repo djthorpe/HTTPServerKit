@@ -109,6 +109,11 @@ NSString* const PGHTTPPasswdExecutable = @"sthttpd-current-mac_x86_64/sbin/th_ht
 	[task setLaunchPath:[binary path]];
 	[task setArguments:arguments];
 
+#ifdef DEBUG
+	NSLog(@"Execute: %@ %@",[binary path],arguments);
+#endif
+
+
 	NSPipe* inPipe = [NSPipe new];
 	NSPipe* outPipe = [NSPipe new];
 	NSString* password2 = [NSString stringWithFormat:@"%@\n",password];
@@ -123,10 +128,17 @@ NSString* const PGHTTPPasswdExecutable = @"sthttpd-current-mac_x86_64/sbin/th_ht
 	[[inPipe fileHandleForWriting] closeFile];
 	
 	[task waitUntilExit];
-	
+#ifdef DEBUG
 	NSLog(@"termination status %d",[task terminationStatus]);
-	
+#endif
 	return YES;
+}
+
+-(BOOL)delete {
+	if([self _fileExists]==NO) {
+		return YES;
+	}
+	return [[NSFileManager defaultManager] removeItemAtPath:_file error:nil];
 }
 
 @end

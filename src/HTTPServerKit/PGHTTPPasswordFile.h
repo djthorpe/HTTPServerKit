@@ -15,5 +15,6 @@
 
 // methods
 -(BOOL)setPassword:(NSString* )password forUser:(NSString* )user;
+-(BOOL)delete;
 
 @end
