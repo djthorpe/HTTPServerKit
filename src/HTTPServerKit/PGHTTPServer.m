@@ -110,7 +110,7 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-#pragma mark Logging
+#pragma mark Logging, etc
 
 -(void)_removeNotification {
 	NSNotificationCenter* theNotificationCenter = [NSNotificationCenter defaultCenter];
@@ -149,19 +149,32 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 	}
 }
 
+-(void)_taskEnded:(NSTask* )task {
+#ifdef DEBUG
+		NSLog(@"Task ended with return value %d",[task terminationStatus]);
+#endif
+	if([task terminationStatus] != 0 && [[self delegate] respondsToSelector:@selector(server:error:)]) {
+		NSDictionary* userInfo = @{
+			NSLocalizedDescriptionKey:[NSString stringWithFormat:@"Task terminated prematurely with error code: %d",[task terminationStatus]]
+		};
+		NSError* error = [NSError errorWithDomain:PGHTTPServerErrorDomain code:PGHTTPServerErrorTermination userInfo: userInfo];
+		[[self delegate] server:self error:error];
+	}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark Server starting
 
--(void)_backgroundTaskThread:(NSTask* )task {
+-(void)_backgroundTaskThread:(NSArray* )arguments {
 	@autoreleasepool {
+		NSThread* otherThread = [arguments objectAtIndex:0];
+		NSTask* task = [arguments objectAtIndex:1];
 #ifdef DEBUG
-		NSLog(@"task launch = %@ %@",[task launchPath],[task arguments]);
+		NSLog(@"Task launch: %@ %@",[task launchPath],[[task arguments] componentsJoinedByString:@" "]);
 #endif
 		[task launch];
 		[task waitUntilExit];
-#ifdef DEBUG
-		NSLog(@"task return value = %d",[task terminationStatus]);
-#endif
+		[self performSelector:@selector(_taskEnded:) onThread:otherThread withObject:task waitUntilDone:YES];
 	}
 }
 
@@ -181,7 +194,7 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 	[self _addNotificationForFileHandle:[thePipe fileHandleForReading]];
 
 	// start task in background
-	[NSThread detachNewThreadSelector:@selector(_backgroundTaskThread:) toTarget:self withObject:task];
+	[NSThread detachNewThreadSelector:@selector(_backgroundTaskThread:) toTarget:self withObject:@[ [NSThread currentThread], task ]];
 
 	// wait for task to be running
 	while(![task processIdentifier]) {
@@ -205,7 +218,6 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 	if(isCheckSymlinks==NO) {
 		[arguments addObjectsFromArray:@[ @"-nos"]];
 	}
-
 	if(_task != nil) {
 		return NO;
 	}
@@ -276,7 +288,7 @@ NSString* const PGHTTPServerExecutable = @"sthttpd-current-mac_x86_64/sbin/thttp
 		case NSNetServicesTimeoutError:
 			return @"NSNetServicesInvalidError";
 		default:
-			return [NSString stringWithFormat:@"Error code: %ld",errorCode];   
+			return [NSString stringWithFormat:@"Error code: %ld",errorCode];
 	}
 }
 

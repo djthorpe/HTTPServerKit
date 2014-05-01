@@ -3,10 +3,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef enum {
-	PGHTTPServerErrorUnknown = 100,
-	PGHTTPServerErrorNetwork = 101
-} PGHTTPServerErrorType;
+enum {
+	PGHTTPServerErrorUnknown = -100,
+	PGHTTPServerErrorNetwork = -101,
+	PGHTTPServerErrorNetServices = -102,
+	PGHTTPServerErrorTermination = -102,
+};
+extern NSString* const PGHTTPServerErrorDomain;
 
 ////////////////////////////////////////////////////////////////////////////////
 
